@@ -37,7 +37,7 @@ public class ERDParser {
 
         JSONArray names = JSONDoc.names();
         
-        System.out.println(names);
+        //System.out.println(names);
 
         JSONArray entidades = JSONDoc.getJSONArray("entidades");
 
@@ -48,10 +48,12 @@ public class ERDParser {
         ArrayList<String> ar= new ArrayList<>();
         
         while (it.hasNext()) {
-
+            
             JSONObject entidad = (JSONObject) it.next();
             
             String NombreTabla = entidad.getString("nombre");
+            
+            Table TablaA = new Table(NombreTabla);           
             
             JSONArray atributos = entidad.getJSONArray("atributos");
             
@@ -62,10 +64,11 @@ public class ERDParser {
             while (attribIt.hasNext()) {
                 JSONObject atributo = (JSONObject) attribIt.next();
                 ar.add(k, atributo.getString("nombre"));                   
-                        
+                TablaA.add(atributo.getString("nombre"));
                 if (atributo.getInt("tipo") == 1) {
+                    TablaA.setPK(atributo.getString("nombre"));
                     PK.add(k);
-                    System.out.println("Llave primaria: "+atributo.getString("nombre")+" Numero: "+k);
+                    //System.out.println("Llave primaria: "+atributo.getString("nombre")+" Numero: "+k);
                 }
                 k++;
             }
@@ -81,15 +84,17 @@ public class ERDParser {
             JTabla jt = new JTabla(new MyTableModel(datos,Columnas),NombreTabla);
             jt.setVisible(true);
             //ArrayList<String> FK= verR(JSONDoc, NombreTabla); 
-            ar.clear();
-            
+            ar.clear();        
+            System.out.println(TablaA.toString());
         }        
         JSONArray debiles = JSONDoc.getJSONArray("debiles");
         Iterator itdeb = debiles.iterator();
         ArrayList<String> ar2= new ArrayList<>();
         while(itdeb.hasNext()){
             JSONObject debil = (JSONObject) itdeb.next();
-
+            
+            Table TablaA = new Table(debil.getString("nombre"));
+            
             JSONArray atributos2 = debil.getJSONArray("atributos");
             
             Iterator itat = atributos2.iterator();
@@ -98,15 +103,22 @@ public class ERDParser {
             while(itat.hasNext()){
                 JSONObject atributo2 = (JSONObject) itat.next();
                 
+                TablaA.add(atributo2.getString("nombre"));
+                
                 ar2.add(k, atributo2.getString("nombre"));
                 if (atributo2.getInt("tipo") == 1) {
+                    TablaA.setPK(atributo2.getString("nombre"));
                     PK.add(k);
-                    System.out.println("Llave primaria: "+atributo2.getString("nombre")+" Numero: "+k);
+                    //System.out.println("Llave primaria: "+atributo2.getString("nombre")+" Numero: "+k);
                 }
                 k++;                     
             }
+            
             Object [][] datos2= new Object[ar2.size()+1][Columnas.length];
-            datos2[0][0]=PKDe(debil.getString("fuerte"));
+            String primary =PKDe(debil.getString("fuerte"));
+            datos2[0][0]=primary;
+            TablaA.add(primary);
+            TablaA.setPK(primary);       
             datos2[0][5]=true;
             datos2[0][4]=true;
             for(int i=0;i<ar2.size();i++){
@@ -119,7 +131,7 @@ public class ERDParser {
             RelationTableModel model = new RelationTableModel(datos2,Columnas);
             JTabla jt = new JTabla(new MyTableModel(datos2, Columnas),debil.getString("nombre"));
             jt.setVisible(true);
-            
+            System.out.println(TablaA.toString());
         }   
     }
     public String PKDe(String entidad2) throws FileNotFoundException{
@@ -132,7 +144,7 @@ public class ERDParser {
         
         JSONArray names = JSONDoc.names(); 
         
-        System.out.println(names);
+        //System.out.println(names);
         
         JSONArray entidades = JSONDoc.getJSONArray("entidades");
         
@@ -195,7 +207,7 @@ public class ERDParser {
         while (it.hasNext()) {
             JSONObject rel = (JSONObject) it.next();
 
-            System.out.println(rel.getString("nombre") );
+            //System.out.println(rel.getString("nombre") );
 
             JSONArray cards = rel.getJSONArray("cardinalidades");
 
