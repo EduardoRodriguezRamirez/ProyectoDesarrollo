@@ -6,7 +6,7 @@ import javax.swing.table.AbstractTableModel;
 
 public class MyTableModel extends AbstractTableModel {
     private final String[] columnNames;
-    private final Object[][] data;
+    Object[][] data;
     MyTableModel(Object[][] datos, String[] Columnas) {
         this.columnNames=Columnas;
         this.data=datos;
@@ -32,7 +32,7 @@ public class MyTableModel extends AbstractTableModel {
     }
     @Override
      public boolean isCellEditable(int row, int col) {
-        if (col==0 || (col==5 && row==0)) {
+        if (col==0 || (col==5) || col==6 || ((boolean)data[row][6]) ) {
             return false;
         } else {
             return true;
@@ -59,7 +59,10 @@ public class MyTableModel extends AbstractTableModel {
                 break;
             case 5:
                 claz = Boolean.class;
-                break;      
+                break;  
+            case 6:
+                claz = Boolean.class;
+                break;  
         }
         return claz;   
     }

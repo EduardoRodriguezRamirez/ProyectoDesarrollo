@@ -1,33 +1,81 @@
 
 package erd.parser;
 
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.*;
 import javax.swing.DefaultCellEditor;
 import javax.swing.GroupLayout;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumn;
 
-public class JTabla extends JFrame {
-    JTabla(MyTableModel model, String Nombre){
+public class JTabla extends JFrame implements ActionListener{
+    JTabla(MyTableModel model, String Nombre, ERDParser es){
     this.setSize(500,500);
     tabla(model);
     this.setTitle(Nombre);
-    this.add(scrollPane);
-    
+    nom=Nombre;
+    puente=es;
     }
+    ERDParser puente;
+    String nom;
     JScrollPane scrollPane;
     JTable table;
-    public void tabla(MyTableModel model) {          
+    JTextArea jtext;
+    private JMenuBar menubar;
+    private JMenu menu1;
+    private JMenuItem menuitem1, menuitem2;
+    JPanel panel1, panel2;
+    MyTableModel modelo;
+    
+    public void tabla(MyTableModel model) {  
+
+    modelo=model;
     table = new JTable(model); 
     scrollPane = new JScrollPane(table);
     table.setFillsViewportHeight(true); 
-    scrollPane.setVisible(true); 
+    scrollPane.setVisible(true);
+    
+    jtext= new JTextArea("aaaaaaaaaaaaaaaaaaa");
+    jtext.setVisible(true);
+    
+    menubar = new JMenuBar();
+    setJMenuBar(menubar);
+    
+    menu1 = new JMenu("Script");
+    menubar.add(menu1);
+    
+    menuitem1 = new JMenuItem("Consulta");
+    menuitem1.addActionListener(this);
+    
+    menuitem2 = new JMenuItem("Tabla");
+    menuitem2.addActionListener(this);
+    
+    menu1.add(menuitem1);
+    menu1.add(menuitem2);
+    
+    panel1 = new JPanel();
+    panel1.add(scrollPane);
+    panel1.setVisible(true);
+    
+    panel2 = new JPanel();
+    panel2.add(jtext);
+    panel2.setVisible(false);
+    
     addCheckBox(5,table);
     addCheckBox(4,table);
+    addCheckBox(6,table);
     addComboBox(1,table);
     SimpleTableDemo St = new SimpleTableDemo(table);
     }
@@ -41,19 +89,106 @@ public class JTabla extends JFrame {
     TableColumn tc = table.getColumnModel().getColumn(Column);
     JComboBox CB= new JComboBox();
     CB.addItem("CHAR");
-    CB.addItem("BIT");
     CB.addItem("BOOLEAN");
-    CB.addItem("BYTEA");
     CB.addItem("CHARACTER VARYING");
-    CB.addItem("CHARACTER");
     CB.addItem("DATE");
     CB.addItem("INTEGER");
-    CB.addItem("JSON");
     CB.addItem("NAME");
     CB.addItem("NUMERIC");
     CB.addItem("TEXT");
-    CB.addItem("REAL");
     tc.setCellEditor(new DefaultCellEditor(CB));
     }
-    
+
+    @Override
+    public void actionPerformed(ActionEvent e) { 
+        
+        if(e.getSource() == menuitem1){
+            this.add(panel2);   
+            if(panel1.isVisible()){
+                panel1.setVisible(false);               
+                
+            }
+            panel2.setVisible(true);
+            Object [][] datos=modelo.data;
+            String consulta="CREATE TABLE "+nom+"(";
+            System.out.println(datos.length);
+            String primarias="";
+            String foraneas="";
+            try{
+            for(int i=0;i<datos.length;i++){
+               String nombre=(String)datos[i][0];
+               Object foreing=datos[i][6];
+               if(foreing==null){
+                   foreing=false;
+               }
+               if((boolean)foreing==true){
+                   foraneas=foraneas+"\nFOREIGN KEY ("+nombre+") REFERENCES "+encontrarLlave(nombre)+" ("+nombre+"),";
+                   System.out.println("A");
+               }
+               String Tipo=(String)datos[i][1];
+               if(Tipo==null){
+                   break;
+               }
+               Object Longitud=datos[i][2];   
+               if(Tipo.equalsIgnoreCase("char") && Longitud==null){
+                   JOptionPane.showMessageDialog(rootPane, "DEBE AGREGAR LONGITUD A TIPO CHAR");
+                   break;
+               }
+               String pres=datos[i][3]+"";
+             
+               Object Null1= datos[i][4];
+               if(Null1==null){
+                   Null1=false;
+               }
+               Object primary=datos[i][5];
+               if(primary==null){
+                   primary=false;
+               }
+               
+               String atri="";
+               
+               atri="\n"+nombre+" "+Tipo;
+               
+               if(Tipo.equalsIgnoreCase("char") || Tipo.equalsIgnoreCase("character varying") || Tipo.equalsIgnoreCase("numeric")){
+                   atri=atri+"("+Longitud+") ";
+               }
+               if((boolean)Null1==true){
+                   atri=atri+" NOT NULL";
+               }
+               if((boolean)primary==true){
+                   primarias=primarias+"\nPRIMARY KEY ("+nombre+"),";
+               }
+               
+               atri=atri+",";
+               consulta=consulta+atri;
+            }
+            }catch(Exception a){
+                System.out.println(a);
+            }
+            consulta=consulta+primarias+foraneas;
+            
+            jtext.setText(quitarComa(consulta));
+            
+        }
+        if(e.getSource() == menuitem2){
+            this.add(panel1);
+            if(panel2.isVisible()){
+                panel2.setVisible(false);
+                
+            }
+            panel1.setVisible(true);
+        }
+        
+        
+    }
+    public String encontrarLlave(String llave){
+        return puente.llaveprimaria(llave);
+    }
+    public String quitarComa(String consulta){
+        String consulta2="";
+        for(int i=0;i<consulta.length()-1;i++){
+            consulta2=consulta2+consulta.charAt(i);
+        }
+        return consulta2+")";
+    }
 }

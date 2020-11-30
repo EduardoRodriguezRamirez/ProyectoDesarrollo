@@ -19,7 +19,8 @@ public class SimpleTableDemo implements TableModelListener {
     }
     @Override
     public void tableChanged(TableModelEvent e) {
-            System.out.println("a");
+            
+            
     }
     
 }
