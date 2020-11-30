@@ -22,29 +22,45 @@ public class ERDParser {
     /**
      * @param args the command line arguments
      */
+    JSONArray entidades;
+    JSONArray debiles;
+    JSONArray relaciones;
+    
+    ArrayList<Table> tablas=new ArrayList<>();
+    ArrayList<String> reservadas=new ArrayList<>();
+    ArrayList<String> reservadas2=new ArrayList<>();
+    ArrayList<String> reservadas3=new ArrayList<>();
+    ArrayList<String> reservadas4=new ArrayList<>();
+    
+    String [] Columnas={"Nombre","Tipo Dato","Longitud","Precision","No Nulo?","Llave Primaria"};
+    
     Object [][] Atributos ;
+    ERDParser(String a) throws FileNotFoundException{
+        FileReader fp = new FileReader(a);
+        JSONTokener tokenizer = new JSONTokener(fp);
+        JSONObject JSONDoc = new JSONObject(tokenizer);
+        entidades = JSONDoc.getJSONArray("entidades");
+        debiles = JSONDoc.getJSONArray("debiles");
+        relaciones = JSONDoc.getJSONArray("relaciones");
+    }
     public static void main(String[] args) throws FileNotFoundException{
-        ERDParser e = new ERDParser();
+        ERDParser e = new ERDParser("university-erd.json");
         e.tablas();
+        e.Debiles();
+        e.verT();
 
     }
+    public void verT(){
+        System.out.println(tablas.size());
+        for(int i=0;i<tablas.size();i++){
+            System.out.println(tablas.get(i).toString());          
+        }
+    }
     public void tablas() throws FileNotFoundException{
-        FileReader fp = new FileReader("university-erd.json");
-
-        JSONTokener tokenizer = new JSONTokener(fp);
-
-        JSONObject JSONDoc = new JSONObject(tokenizer);
-
-        JSONArray names = JSONDoc.names();
-        
-        //System.out.println(names);
-
-        JSONArray entidades = JSONDoc.getJSONArray("entidades");
-
         Iterator it = entidades.iterator();
+            
         
         
-        String [] Columnas={"Nombre","Tipo Dato","Longitud","Precision","No Nulo?","Llave Primaria"};
         ArrayList<String> ar= new ArrayList<>();
         
         while (it.hasNext()) {
@@ -53,42 +69,43 @@ public class ERDParser {
             
             String NombreTabla = entidad.getString("nombre");
             
+            if(!reservadas.equals("NombreTabla")){
+                
             Table TablaA = new Table(NombreTabla);           
             
             JSONArray atributos = entidad.getJSONArray("atributos");
             
             Iterator attribIt = atributos.iterator();
             
-            int k=0;
-            ArrayList<Integer> PK = new ArrayList<>();
             while (attribIt.hasNext()) {
+                
                 JSONObject atributo = (JSONObject) attribIt.next();
-                ar.add(k, atributo.getString("nombre"));                   
+                
                 TablaA.add(atributo.getString("nombre"));
-                if (atributo.getInt("tipo") == 1) {
+                
+                if (atributo.getInt("tipo") == 1) 
+                {
                     TablaA.setPK(atributo.getString("nombre"));
-                    PK.add(k);
-                    //System.out.println("Llave primaria: "+atributo.getString("nombre")+" Numero: "+k);
+                    
                 }
-                k++;
             }
-            Object [][] datos= new Object [ar.size()][Columnas.length];
+            contieneR(NombreTabla,TablaA);
+            tablas.add(TablaA);
             
-            for(int i=0;i<ar.size();i++){
-                datos[i][0]=ar.get(i);
-                if(PK.contains(i)){
-                    datos[i][5]=true;
-                    datos[i][4]=true;
-                }
-            }                
+            
+            }
+            /*Object [][] datos= new Object [TablaA.atributes.size()][Columnas.length];
+            for(int i=0;i<TablaA.atributes.size();i++){
+                
+            }
             JTabla jt = new JTabla(new MyTableModel(datos,Columnas),NombreTabla);
-            jt.setVisible(true);
-            //ArrayList<String> FK= verR(JSONDoc, NombreTabla); 
+            jt.setVisible(true); 
             ar.clear();        
-            System.out.println(TablaA.toString());
-        }        
-        JSONArray debiles = JSONDoc.getJSONArray("debiles");
-        Iterator itdeb = debiles.iterator();
+            System.out.println(TablaA.toString());*/
+        }  
+    }
+    public void Debiles() throws FileNotFoundException{
+    Iterator itdeb = debiles.iterator();
         ArrayList<String> ar2= new ArrayList<>();
         while(itdeb.hasNext()){
             JSONObject debil = (JSONObject) itdeb.next();
@@ -98,55 +115,239 @@ public class ERDParser {
             JSONArray atributos2 = debil.getJSONArray("atributos");
             
             Iterator itat = atributos2.iterator();
-            int k=0;
-            ArrayList<Integer> PK = new ArrayList<>();
+
             while(itat.hasNext()){
                 JSONObject atributo2 = (JSONObject) itat.next();
                 
                 TablaA.add(atributo2.getString("nombre"));
                 
-                ar2.add(k, atributo2.getString("nombre"));
                 if (atributo2.getInt("tipo") == 1) {
                     TablaA.setPK(atributo2.getString("nombre"));
-                    PK.add(k);
-                    //System.out.println("Llave primaria: "+atributo2.getString("nombre")+" Numero: "+k);
                 }
-                k++;                     
+             
+            }
+            String primary =PKDe(debil.getString("fuerte"));
+            TablaA.add(primary);
+            TablaA.setPK(primary); 
+            tablas.add(TablaA);
+        }   
+    }   
+    public void contieneR(String nombre, Table tabla){
+        Iterator it = relaciones.iterator();
+
+        while (it.hasNext()) {
+            JSONObject rel = (JSONObject) it.next();
+            int tipo=0;
+            boolean pasa=true;
+            JSONArray cards = rel.getJSONArray("cardinalidades"); 
+            String Nombre=rel.getString("nombre");
+            for(int i=0;i<tablas.size();i++){
+                if(tablas.get(i).name.equalsIgnoreCase(Nombre)){
+                    pasa=false;
+                }
+            }
+            if(pasa){
+            if(cards.length()==2){
+                JSONObject e1 = cards.getJSONObject(0);
+                JSONObject e2 = cards.getJSONObject(1);   
+                if(e1.getString("entidad").equals(nombre) || e2.getString("entidad").equals(nombre)){                    
+                    String c1=e1.getString("max");
+                    String c2=e2.getString("max");
+                   
+                    if(c1.equals("1") && c2.equals("1")){
+                        Max11(e1,e2,nombre,tabla);
+                    }
+                    if((c1.equals("1") && !c2.equals("1")) || (!c1.equals("1") && c2.equals("1"))){
+                        Max1N(e1,e2,nombre,tabla);
+                    }
+                    if(!c1.equals("1") && !c2.equals("1")){
+                        MaxNN(e1,e2,nombre,tabla, Nombre);
+                    }                 
+                }else{
+                    
+                    continue;
+                }
+                     
+                }else{                
+                    multiple(cards,Nombre);
+            }
+            }
+        }      
+    }
+    public void multiple(JSONArray cards, String Name){
+        Table t = new Table(Name);
+        for(int i=0;i<cards.length();i++){  
+            JSONObject e1=cards.getJSONObject(i);
+            if(!(reservadas4.contains(e1.getString("entidad")))){
+            reservadas4.add(e1.getString("entidad"));
+            ArrayList<String> atributos=obtenerF(e1.getString("entidad"));
+            for(int j=0;j<atributos.size();j++){
+                t.add(atributos.get(j));
+                t.setFK(atributos.get(j));
+                t.setPK(atributos.get(j));
+            }
+        }else{
+                break;
+            }
+        }
+        tablas.add(t);
+    }
+    public void Max11(JSONObject c1, JSONObject c2, String nombre, Table Tabla){
+        String min1=c1.getString("min");
+        String min2=c2.getString("min");
+        String otra="";
+        
+        //Si la participacion es obligatoria
+        if(min1.equals("1") && min2.equals("1")){
+            //Encuentra cual de los 2 es el nombre de la tabla desconocida
+            if(!nombre.equalsIgnoreCase(c1.getString("entidad"))){
+                otra=c2.getString("entidad");
+            }else{
+                otra=c1.getString("entidad");
+            }
+            //Agrega a reservas la tabla que se va a combinar
+            reservadas.add(otra);
+            //Se obtienen los atributos de esa tabla
+            ArrayList<String> atributos=obtenerAtributos(otra);
+            //Se agregan a la tabla los atributos
+            for(int i=0;i<atributos.size();i++){
+                
+                if(atributos.get(i).contains("*")){
+                    Tabla.setFK(atributos.get(i));
+                }               
+                Tabla.add(atributos.get(i));
+            }
+        }
+        if((min1.equals("1") && !min2.equals("1"))){
+            if(c1.getString("entidad").equalsIgnoreCase(nombre)){
+                ArrayList<String> foreing=obtenerF(c2.getString("entidad"));
+                for(int i=0;i<foreing.size();i++){
+                    Tabla.setFK(foreing.get(i));
+                    Tabla.add(foreing.get(i));                  
+                }
+            }
+        }
+        if((!min1.equals("1") && min2.equals("1"))){
+            if(c2.getString("entidad").equalsIgnoreCase(nombre)){
+                ArrayList<String> foreing=obtenerF(c1.getString("entidad"));
+                for(int i=0;i<foreing.size();i++){
+                    Tabla.setFK(foreing.get(i));
+                    Tabla.add(foreing.get(i));                  
+                }
+            }
+        }
+        if(!min1.equals("1") && !min2.equals("1")){
+            if(!(reservadas2.contains(c1.getString("entidad")) && reservadas2.contains(c2.getString("entidad")))){
+            if(c1.getString("entidad").equalsIgnoreCase(nombre)){
+                ArrayList<String> foreing=obtenerF(c2.getString("entidad"));
+                for(int i=0;i<foreing.size();i++){
+                    Tabla.setFK(foreing.get(i));
+                    Tabla.add(foreing.get(i));                  
+                }
+                
+            }else{
+                if(c2.getString("entidad").equalsIgnoreCase(nombre)){
+                ArrayList<String> foreing=obtenerF(c1.getString("entidad"));
+                for(int i=0;i<foreing.size();i++){
+                    Tabla.setFK(foreing.get(i));
+                    Tabla.add(foreing.get(i));                  
+                }
+            }
+            }
+            reservadas2.add(c1.getString("entidad"));
+            }
+        }
+    }
+    public void Max1N(JSONObject c1, JSONObject c2, String nombre, Table Tabla){
+        String max1=c1.getString("max");
+        String max2=c2.getString("max");
+        if(max1.equalsIgnoreCase("1") && !max2.equalsIgnoreCase("1")){
+            if(c2.getString("entidad").equalsIgnoreCase(nombre)){
+                ArrayList<String> foreing=obtenerF(c1.getString("entidad"));
+                for(int i=0;i<foreing.size();i++){
+                    Tabla.setFK(foreing.get(i));
+                    Tabla.add(foreing.get(i));                  
+                }
+            }
+        }else{
+            if(c1.getString("entidad").equalsIgnoreCase(nombre)){
+                ArrayList<String> foreing=obtenerF(c2.getString("entidad"));
+                for(int i=0;i<foreing.size();i++){
+                    Tabla.setFK(foreing.get(i));
+                    Tabla.add(foreing.get(i));                  
+                }
+            }
+        }
+
+    }
+    public void MaxNN(JSONObject c1, JSONObject c2, String nombre, Table Tabla,String Name){
+        if(!(reservadas3.contains(c1.getString("entidad")) && reservadas3.contains(c2.getString("entidad")))){
+            Table t = new Table(Name);
+            ArrayList<String> llaves1=obtenerF(c1.getString("entidad"));
+            ArrayList<String> llaves2=obtenerF(c2.getString("entidad"));
+            for(int i=0;i<llaves1.size();i++){
+                t.setFK(llaves1.get(i));
+                t.setPK(llaves1.get(i));
+                t.add(llaves1.get(i));
+            }
+            for(int i=0;i<llaves2.size();i++){
+                t.setFK(llaves2.get(i));
+                t.setPK(llaves2.get(i));
+                t.add(llaves2.get(i));
+            }
+            reservadas3.add(c1.getString("entidad"));
+            tablas.add(t);
+        }
+    }
+    public ArrayList<String> obtenerAtributos(String nombret){
+        Iterator it=entidades.iterator();
+        ArrayList<String> atributos2 = new ArrayList<>();
+        while(it.hasNext()){
+            JSONObject ent = (JSONObject) it.next();
+            if(ent.getString("entidad").equalsIgnoreCase(nombret)){
+                JSONArray atributos = ent.getJSONArray("atributos");
+            
+                Iterator attribIt = atributos.iterator();
+                while(attribIt.hasNext()){
+                    JSONObject atributo = (JSONObject) attribIt.next();
+                    if (atributo.getInt("tipo") != 1) {
+                    atributos2.add(atributo.getString("nombre"));
+                    }else{
+                    atributos2.add(atributo.getString("nombre")+"*");
+                    }
+                }
+                
             }
             
-            Object [][] datos2= new Object[ar2.size()+1][Columnas.length];
-            String primary =PKDe(debil.getString("fuerte"));
-            datos2[0][0]=primary;
-            TablaA.add(primary);
-            TablaA.setPK(primary);       
-            datos2[0][5]=true;
-            datos2[0][4]=true;
-            for(int i=0;i<ar2.size();i++){
-                datos2[i+1][0]=ar2.get(i);
-                if(PK.contains(i)){
-                    datos2[i+1][5]=true;
-                    datos2[i+1][4]=true;
+        }
+        return atributos2;
+    }
+    public ArrayList<String> obtenerF(String nombret){
+        Iterator it=entidades.iterator();
+        ArrayList<String> atributos2 = new ArrayList<>();
+        while(it.hasNext()){
+            JSONObject ent = (JSONObject) it.next();
+            if(ent.getString("nombre").equalsIgnoreCase(nombret)){
+                JSONArray atributos = ent.getJSONArray("atributos");
+            
+                Iterator attribIt = atributos.iterator();
+                while(attribIt.hasNext()){
+                    JSONObject atributo = (JSONObject) attribIt.next();
+                    if (atributo.getInt("tipo") == 1) {
+                    atributos2.add(atributo.getString("nombre"));                   
+                    }
+    
+                    
                 }
+                
             }
-            RelationTableModel model = new RelationTableModel(datos2,Columnas);
-            JTabla jt = new JTabla(new MyTableModel(datos2, Columnas),debil.getString("nombre"));
-            jt.setVisible(true);
-            System.out.println(TablaA.toString());
-        }   
+            
+        }
+        return atributos2;
     }
     public String PKDe(String entidad2) throws FileNotFoundException{
-        String PK="";
-        FileReader fp = new FileReader("university-erd.json");
-        
-        JSONTokener tokenizer = new JSONTokener(fp);
-        
-        JSONObject JSONDoc = new JSONObject(tokenizer);
-        
-        JSONArray names = JSONDoc.names(); 
-        
-        //System.out.println(names);
-        
-        JSONArray entidades = JSONDoc.getJSONArray("entidades");
+        String PK="";   
+        //System.out.println(names); 
         
         Iterator it = entidades.iterator();
         while (it.hasNext()) {
@@ -169,11 +370,7 @@ public class ERDParser {
         }          
         return PK;
     }
-    public int NumTablas(JSONObject JSONDoc){
-        JSONArray entidades = JSONDoc.getJSONArray("entidades");
-        JSONArray debiles = JSONDoc.getJSONArray("debiles");
-        JSONArray relaciones = JSONDoc.getJSONArray("relaciones");
-        
+    public int NumTablas(JSONObject JSONDoc){     
         int tablas = entidades.length();
         tablas=tablas+debiles.length();   
         
@@ -206,8 +403,6 @@ public class ERDParser {
 
         while (it.hasNext()) {
             JSONObject rel = (JSONObject) it.next();
-
-            //System.out.println(rel.getString("nombre") );
 
             JSONArray cards = rel.getJSONArray("cardinalidades");
 

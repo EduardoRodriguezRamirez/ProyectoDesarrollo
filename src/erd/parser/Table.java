@@ -25,31 +25,49 @@ public class Table {
     public static final int PK = '+';
     public static final int FK = '*';
     
-    private String name;
+    String name;
     private String primaryKey=null;
-    private HashSet keys;
+    private HashSet<String> LLaveP;
+    private HashSet<String> LLaveF;
+    private HashSet<String> LLaveC;
     
-    private ArrayList<String> atributes;
+    ArrayList<String> atributes;
 
     public Table(){
         name="";
         primaryKey=null;
-        keys=new HashSet<String>();
+        LLaveP=new HashSet<>();
+        LLaveF=new HashSet<>();
+        LLaveC=new HashSet<>();
         atributes = new ArrayList<String>();
     }
     
     public Table(String n){
         name= n;
         primaryKey=null;
-        keys = new HashSet<String>();
+        LLaveP = new HashSet<>();
+        LLaveF=new HashSet<>();
+        LLaveC=new HashSet<>();
         atributes = new ArrayList<String>();
     }
     
     public boolean setPK(String pk){
-        return keys.add(pk);
+        return LLaveP.add(pk);
     }
     public boolean isPK(String a){
-        return keys.contains(a);
+        return LLaveP.contains(a);
+    }
+    public boolean setDK(String pk){
+        return LLaveC.add(pk);
+    }
+    public boolean isDK(String a){
+        return LLaveC.contains(a);
+    }
+     public boolean setFK(String Fk){
+        return LLaveF.add(Fk);
+    }
+    public boolean isFK(String F){
+        return LLaveF.contains(F);
     }
     public boolean add(String a){
         boolean result = false;
@@ -82,7 +100,13 @@ public class Table {
             String a = (String) it.next();
             sb.append(a);
             if( isPK(a)){
+                sb.append("+");
+            }
+            if( isFK(a)){
                 sb.append("*");
+            }
+            if( isDK(a)){
+                sb.append("-");
             }
             if(i<n-1){
                 sb.append(",");
