@@ -27,6 +27,7 @@ public class JTabla extends JFrame implements ActionListener{
     this.setTitle(Nombre);
     nom=Nombre;
     puente=es;
+     this.add(panel1);
     }
     ERDParser puente;
     String nom;
@@ -109,69 +110,12 @@ public class JTabla extends JFrame implements ActionListener{
                 
             }
             panel2.setVisible(true);
-            Object [][] datos=modelo.data;
-            String consulta="CREATE TABLE "+nom+"(";
-            System.out.println(datos.length);
-            String primarias="";
-            String foraneas="";
-            try{
-            for(int i=0;i<datos.length;i++){
-               String nombre=(String)datos[i][0];
-               Object foreing=datos[i][6];
-               if(foreing==null){
-                   foreing=false;
-               }
-               if((boolean)foreing==true){
-                   foraneas=foraneas+"\nFOREIGN KEY ("+nombre+") REFERENCES "+encontrarLlave(nombre)+" ("+nombre+"),";
-                   System.out.println("A");
-               }
-               String Tipo=(String)datos[i][1];
-               if(Tipo==null){
-                   break;
-               }
-               Object Longitud=datos[i][2];   
-               if(Tipo.equalsIgnoreCase("char") && Longitud==null){
-                   JOptionPane.showMessageDialog(rootPane, "DEBE AGREGAR LONGITUD A TIPO CHAR");
-                   break;
-               }
-               String pres=datos[i][3]+"";
-             
-               Object Null1= datos[i][4];
-               if(Null1==null){
-                   Null1=false;
-               }
-               Object primary=datos[i][5];
-               if(primary==null){
-                   primary=false;
-               }
-               
-               String atri="";
-               
-               atri="\n"+nombre+" "+Tipo;
-               
-               if(Tipo.equalsIgnoreCase("char") || Tipo.equalsIgnoreCase("character varying") || Tipo.equalsIgnoreCase("numeric")){
-                   atri=atri+"("+Longitud+") ";
-               }
-               if((boolean)Null1==true){
-                   atri=atri+" NOT NULL";
-               }
-               if((boolean)primary==true){
-                   primarias=primarias+"\nPRIMARY KEY ("+nombre+"),";
-               }
-               
-               atri=atri+",";
-               consulta=consulta+atri;
-            }
-            }catch(Exception a){
-                System.out.println(a);
-            }
-            consulta=consulta+primarias+foraneas;
-            
+            String consulta=Consulta();
             jtext.setText(quitarComa(consulta));
             
         }
         if(e.getSource() == menuitem2){
-            this.add(panel1);
+           
             if(panel2.isVisible()){
                 panel2.setVisible(false);
                 
@@ -181,6 +125,90 @@ public class JTabla extends JFrame implements ActionListener{
         
         
     }
+    
+    public String Consulta(){
+        
+            Object [][] datos=modelo.data;
+            
+            String consulta="CREATE TABLE "+nom+"(";
+            String primarias="\nPRIMARY KEY (";
+            String foraneas="";
+            
+            //try{
+            for(int i=0;i<datos.length;i++){
+                
+               String nombre =(String)datos[i][0];
+               Object foreing=datos[i][6];     
+               Object primary=datos[i][5];
+               
+               
+               if(foreing==null){
+                   foreing=false;
+               }
+                        
+               if(primary==null){
+                   primary=false;
+               }
+               
+               if((boolean)primary==true){
+                   
+                   primarias=primarias+nombre+",";
+                   
+               }
+               
+               if((boolean)foreing==true){
+                   
+                   foraneas=foraneas+"\nFOREIGN KEY ("+nombre+") REFERENCES "+encontrarLlave(nombre)+" ("+nombre+"),";
+                   continue;
+               }
+               
+               String Tipo=(String)datos[i][1];
+                System.out.println(((boolean)foreing)==false);
+               if(Tipo==null && ((boolean)foreing)==false){
+                   JOptionPane.showMessageDialog(rootPane, "Agregue un tipo de variable para cada atributo");
+                   break;
+               }
+               
+               Object Longitud=datos[i][2];
+               
+               /*if(Longitud==null && ((boolean)foreing)==false){
+                  if(Tipo.equalsIgnoreCase("char")){
+                   JOptionPane.showMessageDialog(rootPane, "DEBE AGREGAR LONGITUD A TIPO CHAR");
+                   continue;
+                  }
+               }*/
+               
+               String pres=datos[i][3]+"";
+             
+               Object Null1= datos[i][4];
+               
+               if(Null1==null){
+                   Null1=false;
+               }
+                                         
+               String atri="";
+               
+               atri="\n"+nombre+" "+Tipo;
+               
+               if((Tipo.equalsIgnoreCase("char")  && Longitud!=null)|| (Tipo.equalsIgnoreCase("character varying") && Longitud!=null) || (Tipo.equalsIgnoreCase("numeric" ) && Longitud!=null)){
+                   atri=atri+"("+Longitud+") ";
+               }
+               if((boolean)Null1==true){
+                   atri=atri+" NOT NULL";
+               }
+                             
+               atri=atri+",";
+               consulta=consulta+atri;
+               
+            }
+            //}catch(Exception a){
+            //    System.out.println(a);
+            //}
+            primarias=quitarComa(primarias);
+            consulta=consulta+primarias+","+foraneas;
+            return consulta;
+    }
+    
     public String encontrarLlave(String llave){
         return puente.llaveprimaria(llave);
     }
