@@ -159,24 +159,17 @@ public class JTabla extends JFrame implements ActionListener{
                if((boolean)foreing==true){
                    
                    foraneas=foraneas+"\nFOREIGN KEY ("+nombre+") REFERENCES "+encontrarLlave(nombre)+" ("+nombre+"),";
-                   continue;
+                   
                }
                
                String Tipo=(String)datos[i][1];
-                System.out.println(((boolean)foreing)==false);
-               if(Tipo==null && ((boolean)foreing)==false){
+
+               if(Tipo==null){
                    JOptionPane.showMessageDialog(rootPane, "Agregue un tipo de variable para cada atributo");
                    break;
                }
                
                Object Longitud=datos[i][2];
-               
-               /*if(Longitud==null && ((boolean)foreing)==false){
-                  if(Tipo.equalsIgnoreCase("char")){
-                   JOptionPane.showMessageDialog(rootPane, "DEBE AGREGAR LONGITUD A TIPO CHAR");
-                   continue;
-                  }
-               }*/
                
                String pres=datos[i][3]+"";
              

@@ -32,7 +32,7 @@ public class MyTableModel extends AbstractTableModel {
     }
     @Override
      public boolean isCellEditable(int row, int col) {
-        if (col==0 || (col==5) || col==6 || ((boolean)data[row][6]) ) {
+        if (col==0 || (col==5) || col==6) {
             return false;
         } else {
             return true;

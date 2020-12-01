@@ -135,7 +135,7 @@ public class ERDParser {
     //Verifica el tipo de relaciones que tiene la entidad de antes
     public void contieneRelaciones(String nombre, Table tabla) {
         Iterator it = relaciones.iterator();
-
+        Fabrica F = new Fabrica();
         while (it.hasNext()) {
             
             JSONObject rel = (JSONObject) it.next();
@@ -160,7 +160,7 @@ public class ERDParser {
                 AtributosRel.add(a.getString("nombre"));
                 
             }
-            
+            String tipo="";
             if (pasa) {
                 
                 if (cards.length() == 2) {
@@ -175,26 +175,29 @@ public class ERDParser {
 
                         if (c1.equals("1") && c2.equals("1")) {
                             
-                            Max11(e1, e2, nombre, tabla, AtributosRel);
+                            tipo="Max11";                    
                             
                         }
                         
                         if ((c1.equals("1") && !c2.equals("1")) || (!c1.equals("1") && c2.equals("1"))) {
-                            
-                            Max1N(e1, e2, nombre, tabla, AtributosRel);
-                            
+                                                 
+                            tipo="Max1N";
                         }
                         
                         if (!c1.equals("1") && !c2.equals("1")) {
                             
-                            MaxNN(e1, e2, nombre, tabla, Nombre, AtributosRel);
+                            tipo="MaxNN";
                             
                         }
+                        
+                        Cardinalidades c = F.getConexion(tipo);
+                        c.Cardinalidad(e1, e2, nombre, tabla, Nombre, AtributosRel, this);
+                        
                     }
                     
                 } else {
                     
-                    multiple(cards, Nombre, AtributosRel);
+                    multiplesEntidades(cards, Nombre, AtributosRel);
                     
                 }
             }
@@ -226,7 +229,7 @@ public class ERDParser {
 
             }
                      
-            ArrayList<String> LlavesForaneas=obtenerF(debil.getString("fuerte"));
+            ArrayList<String> LlavesForaneas=ObtenerForaneas(debil.getString("fuerte"));
             
             for(int i=0;i<LlavesForaneas.size();i++){
                 
@@ -242,14 +245,14 @@ public class ERDParser {
     }
 
     //En caso de tener multiples entidades una relacion se hace este proceso
-    public void multiple(JSONArray cards, String Name, ArrayList<String> AtributosRel) {
+    public void multiplesEntidades(JSONArray cards, String Name, ArrayList<String> AtributosRel) {
         
         Table t = new Table(Name);
         
         for (int i = 0; i < cards.length(); i++) {
             
             JSONObject e1 = cards.getJSONObject(i);
-            ArrayList<String> atributos = obtenerF(e1.getString("entidad"));
+            ArrayList<String> atributos = ObtenerForaneas(e1.getString("entidad"));
             
                 for (int j = 0; j < atributos.size(); j++) {
                     
@@ -270,214 +273,7 @@ public class ERDParser {
         tablas.add(t);
         
     }
-
-    //En caso de que la relacion sea de 1 a 1
-    public void Max11(JSONObject c1, JSONObject c2, String nombre, Table Tabla, ArrayList<String> AtributosRel) {
-        
-        String min1 = c1.getString("min");
-        String min2 = c2.getString("min");
-        String otra = "";
-
-        //Si la participacion es obligatoria
-        if (min1.equals("1") && min2.equals("1")) {
-            
-            //Encuentra cual de los 2 es el nombre de la tabla desconocida
-            if (!nombre.equalsIgnoreCase(c1.getString("entidad"))) {
-                
-                otra = c2.getString("entidad");
-                
-            } else {
-                
-                otra = c1.getString("entidad");
-                
-            }         
-
-            //Se obtienen los atributos de esa tabla
-            ArrayList<String> atributos = obtenerAtributos(otra);
-            
-            //Se agregan a la tabla los atributos
-            for (int i = 0; i < atributos.size(); i++) {
-
-                if (atributos.get(i).contains("*")) {
-                    
-                    Tabla.setFK(atributos.get(i));
-                    
-                }
-                
-                Tabla.add(atributos.get(i));
-                
-            }
-            
-            for (int i = 0; i < AtributosRel.size(); i++) {
-                
-                Tabla.add(AtributosRel.get(i));
-                
-            }
-        }
-        
-        if ((min1.equals("1") && !min2.equals("1"))) {
-            
-            if (c1.getString("entidad").equalsIgnoreCase(nombre)) {
-                
-                ArrayList<String> foreing = obtenerF(c2.getString("entidad"));
-                
-                for (int i = 0; i < foreing.size(); i++) {
-                    
-                    Tabla.setFK(foreing.get(i));
-                    Tabla.add(foreing.get(i));
-                    
-                }
-                
-                for (int i = 0; i < AtributosRel.size(); i++) {
-                    Tabla.add(AtributosRel.get(i));
-                }
-                
-            }
-        }
-        
-        if ((!min1.equals("1") && min2.equals("1"))) {
-            
-            if (c2.getString("entidad").equalsIgnoreCase(nombre)) {
-                
-                ArrayList<String> foreing = obtenerF(c1.getString("entidad"));
-                
-                for (int i = 0; i < foreing.size(); i++) {
-                    
-                    Tabla.setFK(foreing.get(i));
-                    Tabla.add(foreing.get(i));
-                    
-                }
-                
-                for (int i = 0; i < AtributosRel.size(); i++) {
-                    
-                    Tabla.add(AtributosRel.get(i));
-                    
-                }
-            }
-        }
-        
-        if (!min1.equals("1") && !min2.equals("1")) {
-            
-                if (c1.getString("entidad").equalsIgnoreCase(nombre)) {
-                    
-                    ArrayList<String> foreing = obtenerF(c2.getString("entidad"));
-                    
-                    for (int i = 0; i < foreing.size(); i++) {
-                        
-                        Tabla.setFK(foreing.get(i));
-                        Tabla.add(foreing.get(i));
-                        
-                    }
-                    
-                    for (int i = 0; i < AtributosRel.size(); i++) {
-                        
-                        Tabla.add(AtributosRel.get(i));
-                        
-                    }
-                    
-                } else {
-                    
-                    if (c2.getString("entidad").equalsIgnoreCase(nombre)) {
-                        
-                        ArrayList<String> foreing = obtenerF(c1.getString("entidad"));
-                        
-                        for (int i = 0; i < foreing.size(); i++) {
-                            
-                            Tabla.setFK(foreing.get(i));
-                            Tabla.add(foreing.get(i));
-                            
-                        }
-                        
-                        for (int i = 0; i < AtributosRel.size(); i++) {
-                            
-                            Tabla.add(AtributosRel.get(i));
-                            
-                        }
-                    }
-                }
-        }
-    }
-    
-    //En caso de que la relacion sea de 1 a muchos
-    public void Max1N(JSONObject c1, JSONObject c2, String nombre, Table Tabla, ArrayList<String> AtributosRel) {
-        
-        String max1 = c1.getString("max");
-        String max2 = c2.getString("max");
-        
-        if (max1.equalsIgnoreCase("1") && !max2.equalsIgnoreCase("1")) {
-            
-            if (c2.getString("entidad").equalsIgnoreCase(nombre)) {
-                
-                ArrayList<String> foreing = obtenerF(c1.getString("entidad"));
-                
-                for (int i = 0; i < foreing.size(); i++) {
-                    
-                    Tabla.setFK(foreing.get(i));
-                    Tabla.add(foreing.get(i));
-                    
-                }
-                
-                for (int i = 0; i < AtributosRel.size(); i++) {
-                    
-                    Tabla.add(AtributosRel.get(i));
-                    
-                }
-            }
-            
-        } else {
-            
-            if (c1.getString("entidad").equalsIgnoreCase(nombre)) {
-                
-                ArrayList<String> foreing = obtenerF(c2.getString("entidad"));
-                
-                for (int i = 0; i < foreing.size(); i++) {
-                    
-                    Tabla.setFK(foreing.get(i));
-                    Tabla.add(foreing.get(i));
-                    
-                }
-                
-                for (int i = 0; i < AtributosRel.size(); i++) {
-                    
-                    Tabla.add(AtributosRel.get(i));
-                    
-                }
-            }
-        }
-
-    }
-
-    //En caso de que la relacion sea de muchos a muchos
-    public void MaxNN(JSONObject c1, JSONObject c2, String nombre, Table Tabla, String Name, ArrayList<String> AtributosRel) {
-        
-            Table t = new Table(Name);
-            ArrayList<String> llaves1 = obtenerF(c1.getString("entidad"));
-            ArrayList<String> llaves2 = obtenerF(c2.getString("entidad"));
-            
-            for (int i = 0; i < llaves1.size(); i++) {
-                
-                t.setFK(llaves1.get(i));
-                t.setPK(llaves1.get(i));
-                t.add(llaves1.get(i));
-                
-            }
-            for (int i = 0; i < llaves2.size(); i++) {
-                
-                t.setFK(llaves2.get(i));
-                t.setPK(llaves2.get(i));
-                t.add(llaves2.get(i));
-                
-            }
-            for (int i = 0; i < AtributosRel.size(); i++) {
-                
-                t.add(AtributosRel.get(i));
-                
-            }
-            
-            tablas.add(t);
-            
-    }
-    
+  
     //Se obtienen los atributos de una entidad deseada con el nombre de la misma entidad
     public ArrayList<String> obtenerAtributos(String nombret) {
         
@@ -517,7 +313,7 @@ public class ERDParser {
     }
     
     //Devuelve las llaves primarias de una entidad cualquiera
-    public ArrayList<String> obtenerF(String nombret) {
+    public ArrayList<String> ObtenerForaneas(String nombret) {
         
         Iterator it = entidades.iterator();
         ArrayList<String> atributos2 = new ArrayList<>();
@@ -547,36 +343,5 @@ public class ERDParser {
 
         }
         return atributos2;
-    }
-
-    //Devuelve una llave principal de una entidad cualquiera
-    public String PKDe(String entidad2) throws FileNotFoundException {
-        String PK = "";
-        Iterator it = entidades.iterator();
-        
-        while (it.hasNext()) {
-            
-            JSONObject entidad = (JSONObject) it.next();
-            String NombreTabla = entidad.getString("nombre");
-            JSONArray atributos = entidad.getJSONArray("atributos");
-            Iterator attribIt = atributos.iterator();
-            
-            if (NombreTabla.equalsIgnoreCase(entidad2)) {
-                
-                while (attribIt.hasNext()) {
-                    
-                    JSONObject atributo = (JSONObject) attribIt.next();
-                    
-                    if (atributo.getInt("tipo") == 1) {
-                        
-                        PK = atributo.getString("nombre");
-                        
-                    }
-                }
-            }
-        }
-        
-        return PK;
-        
-    }
+    }  
 }
